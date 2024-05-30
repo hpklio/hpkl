@@ -1,0 +1,15 @@
+amends "pkl:Project"
+
+package {
+  name = "test"
+  baseUri = "package://zot.zot.orb.local/test"
+  version = "0.2.0"
+  packageZipUrl = "https://github.com/hpklio/hpkl/releases/\(version)/hpkl-\(version).zip"
+}
+
+dependencies {
+    ["test"] {
+        uri = "package://zot.zot.orb.local/test@0.2.0"
+    }
+}
+

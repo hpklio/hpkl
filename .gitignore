@@ -19,3 +19,8 @@
 
 # Go workspace file
 go.work
+
+# pkl
+PklProject.deps.json
+.out
+hpkl
