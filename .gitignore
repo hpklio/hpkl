@@ -24,3 +24,5 @@ go.work
 PklProject.deps.json
 .out
 hpkl
+
+dist/
