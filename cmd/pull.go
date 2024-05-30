@@ -25,7 +25,7 @@ func NewPullCmd(appConfig *app.AppConfig) *cobra.Command {
 			sugar := appConfig.Logger.Sugar()
 			sugar.Infow("got", "config", appConfig.Project)
 
-			dependencies := appConfig.Project.Dependencies().RemoteDependencies
+			dependencies := appConfig.Project().Dependencies().RemoteDependencies
 
 			projectDeps := pklutils.ProjectDeps{
 				SchemaVersion:        1,

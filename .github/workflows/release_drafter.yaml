@@ -1,0 +1,33 @@
+name: "Hpkl: Release Drafter run"
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version'
+        required: false
+      branch:
+        description: 'Target branch'
+        required: false
+        default: 'main'
+
+permissions:
+  contents: read
+
+jobs:
+  update_release_draft:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: release-drafter/release-drafter@v6
+        with:
+          config-name: release_drafter.yaml
+          disable-autolabeler: true
+          version: ${{ github.event.inputs.version }}
+          commitish: ${{ github.event.inputs.branch }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

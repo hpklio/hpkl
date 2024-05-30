@@ -10,13 +10,15 @@ import (
 	"log"
 
 	"github.com/spf13/cobra"
+	"go.szostok.io/version/extension"
 	"hpkl.io/hpkl/pkg/app"
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "hpkl",
-	Short: "A brief description of your application",
+	Use:     "hpkl",
+	Version: app.Version(),
+	Short:   "A brief description of your application",
 	Long: `A longer description that spans multiple lines and likely contains
 examples and usage of using your application. For example:
 
@@ -37,6 +39,7 @@ func Execute() {
 func init() {
 	// TODO: context?
 	appConfig, err := app.NewAppConfig(context.Background())
+
 	if err != nil {
 		log.Fatal("Error starting app: ", err)
 	}
@@ -45,4 +48,5 @@ func init() {
 	rootCmd.AddCommand(NewPublishCmd(appConfig))
 	rootCmd.AddCommand(NewBuildCmd(appConfig))
 	rootCmd.AddCommand(NewEvalCmd(appConfig))
+	rootCmd.AddCommand(extension.NewVersionCobraCmd())
 }

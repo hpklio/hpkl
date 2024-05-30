@@ -9,7 +9,19 @@ import (
 
 type AppConfig struct {
 	Logger  *zap.Logger
-	Project *pkl.Project
+	project *pkl.Project
+	ctx     context.Context
+}
+
+func (a *AppConfig) Project() *pkl.Project {
+	if a.project == nil {
+		proj, err := pkl.LoadProject(a.ctx, "PklProject")
+		if err != nil {
+			panic(err)
+		}
+		a.project = proj
+	}
+	return a.project
 }
 
 func NewAppConfig(ctx context.Context) (*AppConfig, error) {
@@ -19,14 +31,8 @@ func NewAppConfig(ctx context.Context) (*AppConfig, error) {
 		return nil, err
 	}
 
-	project, err := pkl.LoadProject(ctx, "PklProject")
-
-	if err != nil {
-		return nil, err
-	}
-
 	return &AppConfig{
-		Logger:  logger,
-		Project: project,
+		Logger: logger,
+		ctx:    ctx,
 	}, nil
 }

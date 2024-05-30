@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
-	"context"
 	"io"
 	"net/url"
 	"path"
@@ -13,7 +12,6 @@ import (
 
 	"github.com/apple/pkl-go/pkl"
 	"github.com/pkg/errors"
-	"hpkl.io/hpkl/config"
 )
 
 var drivePathPattern = regexp.MustCompile(`^[a-zA-Z]:/`)
@@ -122,38 +120,4 @@ func LoadArchiveFiles(in io.Reader) ([]*BufferedFile, error) {
 		return nil, errors.New("no files in package archive")
 	}
 	return files, nil
-}
-
-// LoadArchive loads from a reader containing a compressed tar archive.
-func LoadArchive(in io.Reader, ctx context.Context, pkg string) (*config.Metadata, error) {
-	files, err := LoadArchiveFiles(in)
-	if err != nil {
-		return nil, err
-	}
-
-	return LoadFiles(files, ctx, pkg)
-}
-
-func LoadFiles(files []*BufferedFile, ctx context.Context, pkg string) (*config.Metadata, error) {
-	for _, f := range files {
-		if f.Name == "hpkl.pkl" {
-			return LoadMetadata(ctx, f, pkg)
-		}
-	}
-	return nil, errors.New("hpkl.pkl file not found!")
-}
-
-func LoadMetadata(ctx context.Context, file *BufferedFile, pkg string) (ret *config.Metadata, err error) {
-	evaluator, err := pkl.NewEvaluator(ctx, pkl.PreconfiguredOptions)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		cerr := evaluator.Close()
-		if err == nil {
-			err = cerr
-		}
-	}()
-	ret, err = config.Load(ctx, evaluator, ArchiveSource(string(file.Data), pkg))
-	return ret, err
 }

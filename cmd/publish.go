@@ -19,9 +19,9 @@ func NewPublishCmd(appConfig *app.AppConfig) *cobra.Command {
 
 			sugar := appConfig.Logger.Sugar()
 
-			name := appConfig.Project.Package.Name
-			version := appConfig.Project.Package.Version
-			baseUri := appConfig.Project.Package.BaseUri
+			name := appConfig.Project().Package.Name
+			version := appConfig.Project().Package.Version
+			baseUri := appConfig.Project().Package.BaseUri
 
 			client, err := registry.NewClient(registry.WithPlainHttp(plainHttp))
 			if err != nil {
@@ -39,7 +39,7 @@ func NewPublishCmd(appConfig *app.AppConfig) *cobra.Command {
 
 			sugar.Infof("generated", "ref", ref)
 
-			pushResult, err := client.Push(archivePath, metadataPath, ref, appConfig.Project)
+			pushResult, err := client.Push(archivePath, metadataPath, ref, appConfig.Project())
 
 			if err != nil {
 				return err
