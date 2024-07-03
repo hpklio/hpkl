@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -23,8 +24,8 @@ type (
 	}
 
 	Dependency struct {
-		PackageUri string     `json:"packageUri"`
-		Checksums  *Checksums `json:"checksums"`
+		Uri       string     `json:"uri"`
+		Checksums *Checksums `json:"checksums"`
 	}
 
 	Metadata struct {
@@ -113,7 +114,7 @@ func (r *Resolver) Resolve(dependencies map[string]Dependency) (map[string]*Meta
 	logger := r.appConfig.Logger.Sugar()
 
 	for dependencyName, dependency := range dependencies {
-		metadata, ok := r.cache[dependency.PackageUri]
+		metadata, ok := r.cache[dependency.Uri]
 		if !ok {
 			var resolver DependencyResolver
 
@@ -125,15 +126,15 @@ func (r *Resolver) Resolve(dependencies map[string]Dependency) (map[string]*Meta
 				resolver = r.httpResolver
 			}
 
-			metadata, err := resolver.ResolveMetadata(dependency.PackageUri)
+			metadata, err := resolver.ResolveMetadata(dependency.Uri)
 
 			if err != nil {
 				logger.Errorw("Metadata resolving error", "name", dependencyName, "value", dependency)
 				return nil, err
 			}
 
-			r.cache[dependency.PackageUri] = metadata
-			result[dependency.PackageUri] = metadata
+			r.cache[dependency.Uri] = metadata
+			result[dependency.Uri] = metadata
 
 			if len(metadata.Dependencies) > 0 {
 				subs, err := r.Resolve(metadata.Dependencies)
@@ -147,63 +148,90 @@ func (r *Resolver) Resolve(dependencies map[string]Dependency) (map[string]*Meta
 				}
 			}
 		} else {
-			result[dependency.PackageUri] = metadata
+			result[dependency.Uri] = metadata
 		}
 	}
 	return result, nil
 }
 
+func (r *Resolver) Exists(metadata *Metadata) (bool, error) {
+	baseUri, err := url.Parse(metadata.PackageUri)
+
+	if err != nil {
+		return false, err
+	}
+
+	basePath := pklutils.PklGetRelativePath(r.basePath, baseUri, metadata.Version)
+	// metaPath := path.Join(basePath, fmt.Sprintf("%s@%s.json", metadata.Name, metadata.Version))
+	// archivePath := path.Join(basePath, fmt.Sprintf("%s@%s.zip", metadata.Name, metadata.Version))
+
+	if _, err := os.Stat(basePath); errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	} else {
+		return true, nil
+	}
+
+}
+
 func (r *Resolver) Download(dependencies map[string]*Metadata) error {
 	logger := r.appConfig.Logger.Sugar()
 	for u, m := range dependencies {
-		var resolver DependencyResolver
-
-		if m.ResolverType == OCI {
-			logger.Infow("Downloading", "name", u, "as", m, "proto", "oci")
-			resolver = r.ociResolver
-		} else {
-			logger.Infow("Resolving", "name", u, "as", m, "proto", "http")
-			resolver = r.httpResolver
-		}
-
-		bytes, err := resolver.ResolveArchive(m)
+		e, err := r.Exists(m)
 
 		if err != nil {
 			return err
 		}
 
-		baseUri, err := url.Parse(u)
+		if !e {
+			var resolver DependencyResolver
 
-		if err != nil {
-			return err
-		}
+			if m.ResolverType == OCI {
+				logger.Infow("Downloading", "name", u, "as", m, "proto", "oci")
+				resolver = r.ociResolver
+			} else {
+				logger.Infow("Resolving", "name", u, "as", m, "proto", "http")
+				resolver = r.httpResolver
+			}
 
-		basePath := pklutils.PklGetRelativePath(r.basePath, baseUri, m.Version)
-		err = os.MkdirAll(basePath, os.ModePerm)
+			bytes, err := resolver.ResolveArchive(m)
 
-		if err != nil {
-			return err
-		}
+			if err != nil {
+				return err
+			}
 
-		metaPath := path.Join(basePath, fmt.Sprintf("%s@%s", m.Name, m.Version))
-		archivePath := path.Join(basePath, fmt.Sprintf("%s@%s.zip", m.Name, m.Version))
+			baseUri, err := url.Parse(u)
 
-		metadataBytes, err := json.Marshal(m)
+			if err != nil {
+				return err
+			}
 
-		if err != nil {
-			return err
-		}
+			basePath := pklutils.PklGetRelativePath(r.basePath, baseUri, m.Version)
+			err = os.MkdirAll(basePath, os.ModePerm)
 
-		err = os.WriteFile(metaPath, metadataBytes, os.ModePerm)
+			if err != nil {
+				return err
+			}
 
-		if err != nil {
-			return err
-		}
+			metaPath := path.Join(basePath, fmt.Sprintf("%s@%s.json", m.Name, m.Version))
+			archivePath := path.Join(basePath, fmt.Sprintf("%s@%s.zip", m.Name, m.Version))
 
-		err = os.WriteFile(archivePath, bytes, os.ModePerm)
+			metadataBytes, err := json.Marshal(m)
 
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
+
+			err = os.WriteFile(metaPath, metadataBytes, os.ModePerm)
+
+			if err != nil {
+				return err
+			}
+
+			err = os.WriteFile(archivePath, bytes, os.ModePerm)
+
+			if err != nil {
+				return err
+			}
 		}
 	}
 

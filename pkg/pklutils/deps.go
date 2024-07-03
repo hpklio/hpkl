@@ -38,7 +38,7 @@ func PklGetRelativePath(cacheDir string, baseUri *url.URL, version string) strin
 	return path.Join(
 		cacheDir,
 		baseUri.Host,
-		fmt.Sprintf("%s@%s", baseUri.Path, version),
+		baseUri.Path,
 	)
 }
 

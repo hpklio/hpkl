@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/spf13/cobra"
@@ -28,7 +29,7 @@ func NewResolveCmd(appConfig *app.AppConfig) *cobra.Command {
 			dependencies := make(map[string]app.Dependency, len(deps.RemoteDependencies))
 
 			for n, d := range appConfig.Project().Dependencies().RemoteDependencies {
-				dependencies[n] = app.Dependency{PackageUri: d.PackageUri}
+				dependencies[n] = app.Dependency{Uri: d.PackageUri}
 			}
 
 			resolvedDependencies, err := resolver.Resolve(dependencies)
@@ -57,10 +58,10 @@ func NewResolveCmd(appConfig *app.AppConfig) *cobra.Command {
 				}
 
 				mapUri := *baseUri
+				mapUri.Path = strings.Replace(mapUri.Path, fmt.Sprintf("@%s", dep.Version), "", 1)
 
 				baseUri.Scheme = "projectpackage"
 				versionParsed := semver.MustParse(dep.Version)
-				baseUri.Path += fmt.Sprintf("@%s", dep.Version)
 				majorVersion := fmt.Sprintf("@%x", versionParsed.Major())
 				mapUri.Path += majorVersion
 
