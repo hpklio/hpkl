@@ -44,7 +44,7 @@ func init() {
 		log.Fatal("Error starting app: ", err)
 	}
 	rootCmd.AddCommand(NewLoginCmd(appConfig))
-	rootCmd.AddCommand(NewPullCmd(appConfig))
+	rootCmd.AddCommand(NewResolveCmd(appConfig))
 	rootCmd.AddCommand(NewPublishCmd(appConfig))
 	rootCmd.AddCommand(NewBuildCmd(appConfig))
 	rootCmd.AddCommand(NewEvalCmd(appConfig))

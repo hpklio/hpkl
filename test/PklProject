@@ -8,8 +8,11 @@ package {
 }
 
 dependencies {
-    ["test"] {
+    ["test.oci"] {
         uri = "package://zot.zot.orb.local/test@0.2.0"
+    }
+    ["k8s"] {
+      uri = "package://pkg.pkl-lang.org/pkl-k8s/k8s@1.0.1"
     }
 }
 
