@@ -101,7 +101,7 @@ func NewResolver(plainHttp bool, appConfig *AppConfig) (*Resolver, error) {
 	return &Resolver{
 		ociResolver:  oci,
 		httpResolver: http,
-		basePath:     path.Join(homeDir, ".pkl/cache/package-1"),
+		basePath:     path.Join(homeDir, ".pkl/cache/package-2"),
 		appConfig:    appConfig,
 		cache:        make(map[string]*Metadata),
 	}, nil
