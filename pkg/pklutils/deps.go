@@ -34,7 +34,7 @@ func PklWriteDeps(workingDir string, deps *ProjectDeps) error {
 	return err
 }
 
-func PklGetRelativePath(cacheDir string, baseUri *url.URL, version string) string {
+func PklGetRelativePath(cacheDir string, baseUri *url.URL) string {
 	return path.Join(
 		cacheDir,
 		baseUri.Host,

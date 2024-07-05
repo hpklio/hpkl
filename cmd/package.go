@@ -38,5 +38,7 @@ func NewPackageCmd(appConfig *app.AppConfig) *cobra.Command {
 		},
 	}
 
+	cmd.Flags().BoolVarP(&appConfig.PlainHttp, "plain-http", "p", false, "Use plain http for registry")
+
 	return cmd
 }

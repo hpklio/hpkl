@@ -6,6 +6,7 @@ package cmd
 import (
 	"context"
 	"os"
+	"path"
 
 	"log"
 
@@ -52,4 +53,22 @@ func init() {
 	rootCmd.AddCommand(NewProjectCmd(appConfig))
 	rootCmd.AddCommand(NewDownloadPackageCmd(appConfig))
 	rootCmd.AddCommand(extension.NewVersionCobraCmd())
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal("Error starting app: ", err)
+	}
+
+	workingDir, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	appConfig.DefaultCacheDir = path.Join(homeDir, ".pkl/cache")
+
+	for _, c := range rootCmd.Commands() {
+		c.Flags().StringVar(&appConfig.CacheDir, "cache-dir", path.Join(homeDir, ".pkl/cache"), "The cache directory for storing packages")
+		c.Flags().StringVarP(&appConfig.WorkingDir, "working-dir", "w", workingDir, "Base path that relative module paths are resolved against.")
+		c.Flags().StringVar(&appConfig.RootDir, "root-dir", "", "Restricts access to file-based modules and resources to those located under the root directory.")
+	}
 }

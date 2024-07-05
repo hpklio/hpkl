@@ -2,10 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"net/url"
-	"os"
-	"path"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -22,7 +19,9 @@ func NewResolveCmd(appConfig *app.AppConfig) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				for _, v := range args {
+					appConfig.Logger.Sugar().Infow("Resolving", "path", v)
 					appConfig.WorkingDir = v
+					appConfig.Reset()
 					err := Resolve(appConfig)
 					if err != nil {
 						panic(err)
@@ -38,20 +37,7 @@ func NewResolveCmd(appConfig *app.AppConfig) *cobra.Command {
 		},
 	}
 
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatal("Error starting app: ", err)
-	}
-
-	workingDir, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-
 	cmd.Flags().BoolVarP(&appConfig.PlainHttp, "plain-http", "p", false, "Use plain http for registry")
-	cmd.Flags().StringVar(&appConfig.CacheDir, "cache-dir", path.Join(homeDir, ".pkl/cache"), "The cache directory for storing packages")
-	cmd.Flags().StringVarP(&appConfig.WorkingDir, "working-dir", "w", workingDir, "Base path that relative module paths are resolved against.")
-	cmd.Flags().StringVar(&appConfig.RootDir, "root-dir", "", "Restricts access to file-based modules and resources to those located under the root directory.")
 
 	return cmd
 }

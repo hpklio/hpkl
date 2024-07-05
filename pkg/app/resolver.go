@@ -37,6 +37,7 @@ type (
 		Authors             []string              `json:"authors"`
 		Dependencies        map[string]Dependency `json:"dependencies"`
 		ResolverType        ResolverType          `json:"-"`
+		PlainHttp           bool                  `json:"-"`
 	}
 
 	Resolver struct {
@@ -48,13 +49,14 @@ type (
 	}
 
 	DependencyResolver interface {
-		ResolveMetadata(uri string) (*Metadata, error)
+		ResolveMetadata(uri string, plainHttp bool) (*Metadata, error)
 		ResolveArchive(metadata *Metadata) ([]byte, error)
 	}
 
 	OciResolver struct {
-		client *registry.Client
-		logger *zap.Logger
+		client      *registry.Client
+		plainClient *registry.Client
+		logger      *zap.Logger
 	}
 
 	HttpResolver struct {
@@ -120,7 +122,9 @@ func (r *Resolver) Resolve(dependencies map[string]Dependency) (map[string]*Meta
 				resolver = r.httpResolver
 			}
 
-			metadata, err := resolver.ResolveMetadata(dependency.Uri)
+			plain := strings.Contains(dependencyName, ".plain")
+
+			metadata, err := resolver.ResolveMetadata(dependency.Uri, plain)
 
 			if err != nil {
 				logger.Errorw("Metadata resolving error", "name", dependencyName, "value", dependency)
@@ -155,9 +159,7 @@ func (r *Resolver) Exists(metadata *Metadata) (bool, error) {
 		return false, err
 	}
 
-	basePath := pklutils.PklGetRelativePath(r.basePath, baseUri, metadata.Version)
-	// metaPath := path.Join(basePath, fmt.Sprintf("%s@%s.json", metadata.Name, metadata.Version))
-	// archivePath := path.Join(basePath, fmt.Sprintf("%s@%s.zip", metadata.Name, metadata.Version))
+	basePath := pklutils.PklGetRelativePath(r.basePath, baseUri)
 
 	if _, err := os.Stat(basePath); errors.Is(err, os.ErrNotExist) {
 		return false, nil
@@ -199,7 +201,7 @@ func (r *Resolver) Download(dependencies map[string]*Metadata) error {
 				return err
 			}
 
-			basePath := pklutils.PklGetRelativePath(r.basePath, baseUri, m.Version)
+			basePath := pklutils.PklGetRelativePath(r.basePath, baseUri)
 			err = os.MkdirAll(basePath, os.ModePerm)
 
 			if err != nil {
@@ -234,22 +236,28 @@ func (r *Resolver) Download(dependencies map[string]*Metadata) error {
 
 func NewOciResolver(appConfig *AppConfig) (*OciResolver, error) {
 	client, err := registry.NewClient(registry.WithPlainHttp(appConfig.PlainHttp))
+	plainClient, err := registry.NewClient(registry.WithPlainHttp(true))
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &OciResolver{client: client, logger: appConfig.Logger}, nil
+	return &OciResolver{client: client, plainClient: plainClient, logger: appConfig.Logger}, nil
 }
 
-func (r *OciResolver) ResolveMetadata(uri string) (*Metadata, error) {
+func (r *OciResolver) ResolveMetadata(uri string, plainHttp bool) (*Metadata, error) {
 	ref, err := pklutils.PklUriToRef(uri)
 
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := r.client.Pull(ref, registry.PullOptWithPackage(false))
+	client := r.client
+	if plainHttp {
+		client = r.plainClient
+	}
+
+	result, err := client.Pull(ref, registry.PullOptWithPackage(false))
 
 	if err != nil {
 		return nil, err
@@ -272,7 +280,12 @@ func (r *OciResolver) ResolveArchive(metadata *Metadata) ([]byte, error) {
 		return nil, err
 	}
 
-	result, err := r.client.Pull(ref, registry.PullOptWithPackage(true))
+	client := r.client
+	if metadata.PlainHttp {
+		client = r.plainClient
+	}
+
+	result, err := client.Pull(ref, registry.PullOptWithPackage(true))
 
 	if err != nil {
 		return nil, err
@@ -285,7 +298,7 @@ func NewHttpResolver(appConfig *AppConfig) *HttpResolver {
 	return &HttpResolver{plainHttp: appConfig.PlainHttp, logger: appConfig.Logger}
 }
 
-func (r *HttpResolver) ResolveMetadata(uri string) (*Metadata, error) {
+func (r *HttpResolver) ResolveMetadata(uri string, plainHttp bool) (*Metadata, error) {
 	logger := r.logger.Sugar()
 	u, err := url.Parse(uri)
 
@@ -294,7 +307,7 @@ func (r *HttpResolver) ResolveMetadata(uri string) (*Metadata, error) {
 		return nil, err
 	}
 
-	if r.plainHttp {
+	if r.plainHttp || plainHttp {
 		u.Scheme = "http"
 	} else {
 		u.Scheme = "https"
@@ -322,6 +335,7 @@ func (r *HttpResolver) ResolveMetadata(uri string) (*Metadata, error) {
 	}
 
 	metadata.ResolverType = HTTP
+	metadata.PlainHttp = plainHttp
 
 	return metadata, nil
 }

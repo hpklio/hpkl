@@ -9,14 +9,19 @@ import (
 )
 
 type AppConfig struct {
-	Logger     *zap.Logger
-	project    *pkl.Project
-	ctx        context.Context
-	PlainHttp  bool
-	CacheDir   string
-	WorkingDir string
-	RootDir    string
+	Logger          *zap.Logger
+	project         *pkl.Project
+	ctx             context.Context
+	PlainHttp       bool
+	CacheDir        string
+	DefaultCacheDir string
+	WorkingDir      string
+	RootDir         string
 }
+
+const (
+	configPath = ".hpkl/config.pkl"
+)
 
 func (a *AppConfig) Project() *pkl.Project {
 	projectFile := path.Join(a.WorkingDir, "PklProject")
@@ -31,7 +36,12 @@ func (a *AppConfig) Project() *pkl.Project {
 	return a.project
 }
 
+func (a *AppConfig) Reset() {
+	a.project = nil
+}
+
 func NewAppConfig(ctx context.Context) (*AppConfig, error) {
+
 	logger, err := NewLogger()
 
 	if err != nil {
