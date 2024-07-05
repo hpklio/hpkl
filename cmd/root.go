@@ -43,10 +43,13 @@ func init() {
 	if err != nil {
 		log.Fatal("Error starting app: ", err)
 	}
+
 	rootCmd.AddCommand(NewLoginCmd(appConfig))
 	rootCmd.AddCommand(NewResolveCmd(appConfig))
 	rootCmd.AddCommand(NewPublishCmd(appConfig))
-	rootCmd.AddCommand(NewBuildCmd(appConfig))
+	rootCmd.AddCommand(NewPackageCmd(appConfig))
 	rootCmd.AddCommand(NewEvalCmd(appConfig))
+	rootCmd.AddCommand(NewProjectCmd(appConfig))
+	rootCmd.AddCommand(NewDownloadPackageCmd(appConfig))
 	rootCmd.AddCommand(extension.NewVersionCobraCmd())
 }

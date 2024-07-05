@@ -79,20 +79,14 @@ const (
 	HTTP
 )
 
-func NewResolver(plainHttp bool, appConfig *AppConfig) (*Resolver, error) {
-	oci, err := NewOciResolver(plainHttp, appConfig)
+func NewResolver(appConfig *AppConfig) (*Resolver, error) {
+	oci, err := NewOciResolver(appConfig)
 
 	if err != nil {
 		return nil, err
 	}
 
-	http := NewHttpResolver(plainHttp, appConfig)
-
-	if err != nil {
-		return nil, err
-	}
-
-	homeDir, err := os.UserHomeDir()
+	http := NewHttpResolver(appConfig)
 
 	if err != nil {
 		return nil, err
@@ -101,7 +95,7 @@ func NewResolver(plainHttp bool, appConfig *AppConfig) (*Resolver, error) {
 	return &Resolver{
 		ociResolver:  oci,
 		httpResolver: http,
-		basePath:     path.Join(homeDir, ".pkl/cache/package-2"),
+		basePath:     path.Join(appConfig.CacheDir, "package-2"),
 		appConfig:    appConfig,
 		cache:        make(map[string]*Metadata),
 	}, nil
@@ -238,8 +232,8 @@ func (r *Resolver) Download(dependencies map[string]*Metadata) error {
 	return nil
 }
 
-func NewOciResolver(plainHttp bool, appConfig *AppConfig) (*OciResolver, error) {
-	client, err := registry.NewClient(registry.WithPlainHttp(plainHttp))
+func NewOciResolver(appConfig *AppConfig) (*OciResolver, error) {
+	client, err := registry.NewClient(registry.WithPlainHttp(appConfig.PlainHttp))
 
 	if err != nil {
 		return nil, err
@@ -287,8 +281,8 @@ func (r *OciResolver) ResolveArchive(metadata *Metadata) ([]byte, error) {
 	return result.Archive.Data, nil
 }
 
-func NewHttpResolver(plainHttp bool, appConfig *AppConfig) *HttpResolver {
-	return &HttpResolver{plainHttp: plainHttp, logger: appConfig.Logger}
+func NewHttpResolver(appConfig *AppConfig) *HttpResolver {
+	return &HttpResolver{plainHttp: appConfig.PlainHttp, logger: appConfig.Logger}
 }
 
 func (r *HttpResolver) ResolveMetadata(uri string) (*Metadata, error) {

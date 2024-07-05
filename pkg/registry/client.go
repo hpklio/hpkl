@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"sort"
 	"strings"
 
@@ -68,7 +69,12 @@ func NewClient(options ...ClientOption) (*Client, error) {
 		option(client)
 	}
 	if client.credentialsFile == "" {
-		// client.credentialsFile = helmpath.ConfigPath(CredentialsFileBasename)
+		home, err := os.UserHomeDir()
+
+		if err != nil {
+			return nil, err
+		}
+		client.credentialsFile = path.Join(home, ".docker/config.json")
 	}
 	if client.authorizer == nil {
 		authClient, err := dockerauth.NewClientWithDockerFallback(client.credentialsFile)
@@ -228,6 +234,7 @@ func (c *Client) Login(host string, options ...LoginOption) error {
 	if err := c.authorizer.LoginWithOpts(authorizerLoginOpts...); err != nil {
 		return err
 	}
+
 	fmt.Fprintln(c.out, "Login Succeeded")
 	return nil
 }

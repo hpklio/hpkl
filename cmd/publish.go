@@ -10,7 +10,6 @@ import (
 )
 
 func NewPublishCmd(appConfig *app.AppConfig) *cobra.Command {
-	var plainHttp bool
 
 	cmd := &cobra.Command{
 		Use:   "publish",
@@ -23,7 +22,7 @@ func NewPublishCmd(appConfig *app.AppConfig) *cobra.Command {
 			version := appConfig.Project().Package.Version
 			baseUri := appConfig.Project().Package.BaseUri
 
-			client, err := registry.NewClient(registry.WithPlainHttp(plainHttp))
+			client, err := registry.NewClient(registry.WithPlainHttp(appConfig.PlainHttp))
 			if err != nil {
 				return err
 			}
@@ -50,8 +49,6 @@ func NewPublishCmd(appConfig *app.AppConfig) *cobra.Command {
 			return nil
 		},
 	}
-
-	cmd.Flags().BoolVarP(&plainHttp, "plain-http", "p", false, "Use plain http for registry")
 
 	return cmd
 }

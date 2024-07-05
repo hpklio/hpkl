@@ -16,6 +16,5 @@ func WithVals(logger *zap.Logger) func(options *pkl.EvaluatorOptions) {
 	return func(options *pkl.EvaluatorOptions) {
 		options.AllowedResources = append(options.AllowedResources, "vals:")
 		options.ResourceReaders = append(options.ResourceReaders, valsReader)
-		options.OutputFormat = "yaml"
 	}
 }

@@ -20,13 +20,13 @@ type ProjectDeps struct {
 	ResolvedDependencies map[string]*ResolvedDependency `json:"resolvedDependencies"`
 }
 
-func PklWriteDeps(deps *ProjectDeps) error {
+func PklWriteDeps(workingDir string, deps *ProjectDeps) error {
 	depsData, err := json.MarshalIndent(deps, "", "  ")
 	if err != nil {
 		return err
 	}
 
-	err = os.WriteFile("PklProject.deps.json", depsData, os.ModePerm)
+	err = os.WriteFile(path.Join(workingDir, "PklProject.deps.json"), depsData, os.ModePerm)
 	if err != nil {
 		return err
 	}

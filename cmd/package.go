@@ -7,15 +7,24 @@ import (
 	"hpkl.io/hpkl/pkg/app"
 )
 
-func NewBuildCmd(appConfig *app.AppConfig) *cobra.Command {
+func NewPackageCmd(appConfig *app.AppConfig) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "build",
-		Short: "Build hpkl project",
+		Use:   "package",
+		Short: "Package hpkl project",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			sugar := appConfig.Logger.Sugar()
 
-			pklCmd := exec.Command("pkl", "project", "package", "--skip-publish-check")
+			pklCmd := exec.Command(
+				"pkl",
+				"project",
+				"package",
+				"--skip-publish-check",
+				"--working-dir",
+				appConfig.WorkingDir,
+				"--cache-dir",
+				appConfig.CacheDir,
+			)
 			_, err := pklCmd.Output()
 
 			if err != nil {
