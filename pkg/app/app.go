@@ -17,6 +17,7 @@ type AppConfig struct {
 	DefaultCacheDir string
 	WorkingDir      string
 	RootDir         string
+	Parameters      []string
 }
 
 const (
@@ -28,6 +29,7 @@ func (a *AppConfig) Project() *pkl.Project {
 
 	if a.project == nil {
 		proj, err := pkl.LoadProject(a.ctx, projectFile)
+
 		if err != nil {
 			panic(err)
 		}

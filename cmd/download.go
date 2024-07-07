@@ -41,9 +41,11 @@ func NewDownloadPackageCmd(appConfig *app.AppConfig) *cobra.Command {
 						os.MkdirAll(parentDir, os.ModePerm)
 					}
 
-					err = os.Symlink(relativePath, targetPath)
-					if err != nil {
-						panic(err)
+					if _, err := os.Stat(targetPath); errors.Is(err, os.ErrNotExist) {
+						err = os.Symlink(relativePath, targetPath)
+						if err != nil {
+							panic(err)
+						}
 					}
 
 				}
