@@ -21,6 +21,7 @@ func NewEvalCmd(appConfig *app.AppConfig) *cobra.Command {
 			for i, module := range args {
 				evaluator, err := pkl.NewEvaluator(
 					cmd.Context(),
+					pkl.WithProject(appConfig.Project()),
 					pkl.PreconfiguredOptions,
 					pklutils.WithVals(appConfig.Logger),
 					func(opts *pkl.EvaluatorOptions) {
