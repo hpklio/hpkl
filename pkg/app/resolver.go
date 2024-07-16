@@ -26,6 +26,8 @@ type (
 	Dependency struct {
 		Uri       string     `json:"uri"`
 		Checksums *Checksums `json:"checksums"`
+		Include   bool       `json:"include"`
+		Name      string     `json:"name"`
 	}
 
 	Metadata struct {
@@ -38,6 +40,7 @@ type (
 		Dependencies        map[string]Dependency `json:"dependencies"`
 		ResolverType        ResolverType          `json:"-"`
 		PlainHttp           bool                  `json:"-"`
+		Include             bool                  `json:"-"`
 	}
 
 	Resolver struct {
@@ -109,8 +112,9 @@ func (r *Resolver) Resolve(dependencies map[string]Dependency) (map[string]*Meta
 
 	logger := r.appConfig.Logger.Sugar()
 
-	for dependencyName, dependency := range dependencies {
+	for _, dependency := range dependencies {
 		metadata, ok := r.cache[dependency.Uri]
+		dependencyName := dependency.Name
 		if !ok {
 			var resolver DependencyResolver
 
@@ -125,6 +129,7 @@ func (r *Resolver) Resolve(dependencies map[string]Dependency) (map[string]*Meta
 			plain := strings.Contains(dependencyName, ".plain")
 
 			metadata, err := resolver.ResolveMetadata(dependency.Uri, plain)
+			metadata.Include = dependency.Include
 
 			if err != nil {
 				logger.Errorw("Metadata resolving error", "name", dependencyName, "value", dependency)
