@@ -4,7 +4,7 @@ go 1.22.3
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
-	github.com/apple/pkl-go v0.7.0
+	github.com/apple/pkl-go v0.8.0
 	github.com/containerd/containerd v1.7.17
 	github.com/helmfile/vals v0.37.1
 	github.com/opencontainers/image-spec v1.1.0

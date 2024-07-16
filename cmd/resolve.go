@@ -2,10 +2,14 @@ package cmd
 
 import (
 	"fmt"
+	"maps"
 	"net/url"
+	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/apple/pkl-go/pkl"
 	"github.com/spf13/cobra"
 	"hpkl.io/hpkl/pkg/app"
 	"hpkl.io/hpkl/pkg/pklutils"
@@ -42,22 +46,37 @@ func NewResolveCmd(appConfig *app.AppConfig) *cobra.Command {
 	return cmd
 }
 
-func Resolve(appConfig *app.AppConfig) error {
-	resolver, err := app.NewResolver(appConfig)
-	sugar := appConfig.Logger.Sugar()
-	project := appConfig.Project()
+func CollectDependencies(dependecies *pkl.ProjectDependencies, include bool) map[string]app.Dependency {
+	result := make(map[string]app.Dependency)
 
-	deps := project.Dependencies()
+	for _, dep := range dependecies.LocalDependencies {
+		remote := dep.Dependencies.RemoteDependencies
 
-	sugar.Infow("got", "config", appConfig.Project())
+		for n, remoteDep := range remote {
+			result[remoteDep.PackageUri] = app.Dependency{Uri: remoteDep.PackageUri, Name: n, Include: false}
+		}
 
-	dependencies := make(map[string]app.Dependency, len(deps.RemoteDependencies))
-
-	for n, d := range appConfig.Project().Dependencies().RemoteDependencies {
-		dependencies[n] = app.Dependency{Uri: d.PackageUri}
+		for _, localDep := range dep.Dependencies.LocalDependencies {
+			inner := CollectDependencies(localDep.Dependencies, false)
+			maps.Copy(result, inner)
+		}
 	}
 
-	resolvedDependencies, err := resolver.Resolve(dependencies)
+	for n, dep := range dependecies.RemoteDependencies {
+		result[dep.PackageUri] = app.Dependency{Uri: dep.PackageUri, Name: n, Include: include}
+	}
+
+	return result
+}
+
+func Resolve(appConfig *app.AppConfig) error {
+	resolver, err := app.NewResolver(appConfig)
+	// sugar := appConfig.Logger.Sugar()
+	project := appConfig.Project()
+
+	remoteDependencies := CollectDependencies(project.Dependencies(), true)
+
+	resolvedDependencies, err := resolver.Resolve(remoteDependencies)
 
 	if err != nil {
 		return err
@@ -69,34 +88,71 @@ func Resolve(appConfig *app.AppConfig) error {
 		return err
 	}
 
+	dependencies := make(map[string]*pklutils.ResolvedDependency, len(resolvedDependencies)+len(project.Dependencies().LocalDependencies))
+
 	projectDeps := pklutils.ProjectDeps{
 		SchemaVersion:        1,
-		ResolvedDependencies: make(map[string]*pklutils.ResolvedDependency, len(resolvedDependencies)),
+		ResolvedDependencies: dependencies,
 	}
 
 	for depUri, dep := range resolvedDependencies {
+		if dep.Include {
+			baseUri, err := url.Parse(depUri)
 
-		baseUri, err := url.Parse(depUri)
+			if err != nil {
+				return err
+			}
+
+			mapUri := *baseUri
+			mapUri.Path = strings.Replace(mapUri.Path, fmt.Sprintf("@%s", dep.Version), "", 1)
+
+			baseUri.Scheme = "projectpackage"
+			versionParsed := semver.MustParse(dep.Version)
+			majorVersion := fmt.Sprintf("@%x", versionParsed.Major())
+			mapUri.Path += majorVersion
+
+			resolvedDependency := pklutils.ResolvedDependency{
+				DependencyType: "remote",
+				Uri:            baseUri.String(),
+				Checksums:      map[string]string{"sha256": dep.PackageZipChecksums.Sha256},
+			}
+
+			projectDeps.ResolvedDependencies[mapUri.String()] = &resolvedDependency
+		}
+	}
+
+	projectFileUri, err := url.Parse(project.ProjectFileUri)
+	projectFilePath := strings.Replace(projectFileUri.Path, "/PklProject", "", 1)
+
+	versionRegex := regexp.MustCompile("^(.*)\\@(\\d+)\\.\\d.\\d$")
+
+	for _, dep := range project.Dependencies().LocalDependencies {
+
+		projectUri, err := url.Parse(dep.PackageUri)
+		if err != nil {
+			return err
+		}
+		projectUri.Scheme = "projectpackage"
+
+		mapUri := versionRegex.ReplaceAllString(dep.PackageUri, "$1@$2")
+
+		depProjectFileUri, err := url.Parse(dep.ProjectFileUri)
+		if err != nil {
+			return err
+		}
+
+		rel, err := filepath.Rel(projectFilePath, strings.Replace(depProjectFileUri.Path, "/PklProject", "", 1))
 
 		if err != nil {
 			return err
 		}
 
-		mapUri := *baseUri
-		mapUri.Path = strings.Replace(mapUri.Path, fmt.Sprintf("@%s", dep.Version), "", 1)
-
-		baseUri.Scheme = "projectpackage"
-		versionParsed := semver.MustParse(dep.Version)
-		majorVersion := fmt.Sprintf("@%x", versionParsed.Major())
-		mapUri.Path += majorVersion
-
 		resolvedDependency := pklutils.ResolvedDependency{
-			DependencyType: "remote",
-			Uri:            baseUri.String(),
-			Checksums:      map[string]string{"sha256": dep.PackageZipChecksums.Sha256},
+			DependencyType: "local",
+			Path:           rel,
+			Uri:            projectUri.String(),
 		}
-
-		projectDeps.ResolvedDependencies[mapUri.String()] = &resolvedDependency
+		projectDeps.ResolvedDependencies[mapUri] = &resolvedDependency
 	}
 
 	err = pklutils.PklWriteDeps(appConfig.WorkingDir, &projectDeps)

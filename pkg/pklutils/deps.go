@@ -11,8 +11,9 @@ import (
 
 type ResolvedDependency struct {
 	DependencyType string            `json:"type"`
-	Uri            string            `json:"uri"`
-	Checksums      map[string]string `json:"checksums"`
+	Uri            string            `json:"uri,omitempty"`
+	Path           string            `json:"path,omitempty"`
+	Checksums      map[string]string `json:"checksums,omitempty"`
 }
 
 type ProjectDeps struct {
