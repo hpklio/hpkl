@@ -103,7 +103,6 @@ func NewResolver(appConfig *AppConfig) (*Resolver, error) {
 		appConfig:    appConfig,
 		cache:        make(map[string]*Metadata),
 	}, nil
-
 }
 
 func (r *Resolver) Resolve(dependencies map[string]Dependency) (map[string]*Metadata, error) {
