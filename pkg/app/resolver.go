@@ -24,10 +24,10 @@ type (
 	}
 
 	Dependency struct {
-		Uri       string     `json:"uri"`
-		Checksums *Checksums `json:"checksums"`
-		Include   bool       `json:"include"`
-		Name      string     `json:"name"`
+		Uri            string     `json:"uri"`
+		Checksums      *Checksums `json:"checksums"`
+		Name           string     `json:"name"`
+		ProjectFileUri string     `json:"project_file_uri"`
 	}
 
 	Metadata struct {
@@ -40,7 +40,6 @@ type (
 		Dependencies        map[string]Dependency `json:"dependencies"`
 		ResolverType        ResolverType          `json:"-"`
 		PlainHttp           bool                  `json:"-"`
-		Include             bool                  `json:"-"`
 	}
 
 	Resolver struct {
@@ -104,7 +103,6 @@ func NewResolver(appConfig *AppConfig) (*Resolver, error) {
 		appConfig:    appConfig,
 		cache:        make(map[string]*Metadata),
 	}, nil
-
 }
 
 func (r *Resolver) Resolve(dependencies map[string]Dependency) (map[string]*Metadata, error) {
@@ -129,7 +127,6 @@ func (r *Resolver) Resolve(dependencies map[string]Dependency) (map[string]*Meta
 			plain := strings.Contains(dependencyName, ".plain")
 
 			metadata, err := resolver.ResolveMetadata(dependency.Uri, plain)
-			metadata.Include = dependency.Include
 
 			if err != nil {
 				logger.Errorw("Metadata resolving error", "name", dependencyName, "value", dependency)
