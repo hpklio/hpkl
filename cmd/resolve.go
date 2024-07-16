@@ -46,24 +46,39 @@ func NewResolveCmd(appConfig *app.AppConfig) *cobra.Command {
 	return cmd
 }
 
-func CollectDependencies(dependecies *pkl.ProjectDependencies, include bool) map[string]app.Dependency {
+func CollectLocalDependencies(dependecies *pkl.ProjectDependencies) map[string]app.Dependency {
+	result := make(map[string]app.Dependency)
+
+	for n, dep := range dependecies.LocalDependencies {
+		result[dep.PackageUri] = app.Dependency{Uri: dep.PackageUri, Name: n, ProjectFileUri: dep.ProjectFileUri}
+
+		for _, localDep := range dep.Dependencies.LocalDependencies {
+			inner := CollectLocalDependencies(localDep.Dependencies)
+			maps.Copy(result, inner)
+		}
+	}
+
+	return result
+}
+
+func CollectRemoteDependencies(dependecies *pkl.ProjectDependencies) map[string]app.Dependency {
 	result := make(map[string]app.Dependency)
 
 	for _, dep := range dependecies.LocalDependencies {
 		remote := dep.Dependencies.RemoteDependencies
 
 		for n, remoteDep := range remote {
-			result[remoteDep.PackageUri] = app.Dependency{Uri: remoteDep.PackageUri, Name: n, Include: false}
+			result[remoteDep.PackageUri] = app.Dependency{Uri: remoteDep.PackageUri, Name: n}
 		}
 
 		for _, localDep := range dep.Dependencies.LocalDependencies {
-			inner := CollectDependencies(localDep.Dependencies, false)
+			inner := CollectRemoteDependencies(localDep.Dependencies)
 			maps.Copy(result, inner)
 		}
 	}
 
 	for n, dep := range dependecies.RemoteDependencies {
-		result[dep.PackageUri] = app.Dependency{Uri: dep.PackageUri, Name: n, Include: include}
+		result[dep.PackageUri] = app.Dependency{Uri: dep.PackageUri, Name: n}
 	}
 
 	return result
@@ -74,7 +89,7 @@ func Resolve(appConfig *app.AppConfig) error {
 	// sugar := appConfig.Logger.Sugar()
 	project := appConfig.Project()
 
-	remoteDependencies := CollectDependencies(project.Dependencies(), true)
+	remoteDependencies := CollectRemoteDependencies(project.Dependencies())
 
 	resolvedDependencies, err := resolver.Resolve(remoteDependencies)
 
@@ -96,29 +111,28 @@ func Resolve(appConfig *app.AppConfig) error {
 	}
 
 	for depUri, dep := range resolvedDependencies {
-		if dep.Include {
-			baseUri, err := url.Parse(depUri)
 
-			if err != nil {
-				return err
-			}
+		baseUri, err := url.Parse(depUri)
 
-			mapUri := *baseUri
-			mapUri.Path = strings.Replace(mapUri.Path, fmt.Sprintf("@%s", dep.Version), "", 1)
-
-			baseUri.Scheme = "projectpackage"
-			versionParsed := semver.MustParse(dep.Version)
-			majorVersion := fmt.Sprintf("@%x", versionParsed.Major())
-			mapUri.Path += majorVersion
-
-			resolvedDependency := pklutils.ResolvedDependency{
-				DependencyType: "remote",
-				Uri:            baseUri.String(),
-				Checksums:      map[string]string{"sha256": dep.PackageZipChecksums.Sha256},
-			}
-
-			projectDeps.ResolvedDependencies[mapUri.String()] = &resolvedDependency
+		if err != nil {
+			return err
 		}
+
+		mapUri := *baseUri
+		mapUri.Path = strings.Replace(mapUri.Path, fmt.Sprintf("@%s", dep.Version), "", 1)
+
+		baseUri.Scheme = "projectpackage"
+		versionParsed := semver.MustParse(dep.Version)
+		majorVersion := fmt.Sprintf("@%x", versionParsed.Major())
+		mapUri.Path += majorVersion
+
+		resolvedDependency := pklutils.ResolvedDependency{
+			DependencyType: "remote",
+			Uri:            baseUri.String(),
+			Checksums:      map[string]string{"sha256": dep.PackageZipChecksums.Sha256},
+		}
+
+		projectDeps.ResolvedDependencies[mapUri.String()] = &resolvedDependency
 	}
 
 	projectFileUri, err := url.Parse(project.ProjectFileUri)
@@ -126,15 +140,17 @@ func Resolve(appConfig *app.AppConfig) error {
 
 	versionRegex := regexp.MustCompile("^(.*)\\@(\\d+)\\.\\d.\\d$")
 
-	for _, dep := range project.Dependencies().LocalDependencies {
+	localDependencies := CollectLocalDependencies(project.Dependencies())
 
-		projectUri, err := url.Parse(dep.PackageUri)
+	for _, dep := range localDependencies {
+
+		projectUri, err := url.Parse(dep.Uri)
 		if err != nil {
 			return err
 		}
 		projectUri.Scheme = "projectpackage"
 
-		mapUri := versionRegex.ReplaceAllString(dep.PackageUri, "$1@$2")
+		mapUri := versionRegex.ReplaceAllString(dep.Uri, "$1@$2")
 
 		depProjectFileUri, err := url.Parse(dep.ProjectFileUri)
 		if err != nil {
