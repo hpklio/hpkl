@@ -138,7 +138,7 @@ func Resolve(appConfig *app.AppConfig) error {
 	projectFileUri, err := url.Parse(project.ProjectFileUri)
 	projectFilePath := strings.Replace(projectFileUri.Path, "/PklProject", "", 1)
 
-	versionRegex := regexp.MustCompile("^(.*)\\@(\\d+)\\.\\d.\\d$")
+	versionRegex := regexp.MustCompile("^(.*)\\@(\\d+)\\.\\d.\\d")
 
 	localDependencies := CollectLocalDependencies(project.Dependencies())
 
