@@ -128,6 +128,11 @@ func (r *Resolver) Resolve(dependencies map[string]Dependency) (map[string]*Meta
 
 			metadata, err := resolver.ResolveMetadata(dependency.Uri, plain)
 
+			for metadataName, metadataDep := range metadata.Dependencies {
+				metadataDep.Name = metadataName
+				metadata.Dependencies[metadataName] = metadataDep
+			}
+
 			if err != nil {
 				logger.Errorw("Metadata resolving error", "name", dependencyName, "value", dependency)
 				return nil, err
