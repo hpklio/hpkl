@@ -87,7 +87,6 @@ func CollectRemoteDependencies(dependecies *pkl.ProjectDependencies) map[string]
 func Resolve(appConfig *app.AppConfig) error {
 	resolver, err := app.NewResolver(appConfig)
 	// sugar := appConfig.Logger.Sugar()
-	// sugar := appConfig.Logger.Sugar()
 	project := appConfig.Project()
 
 	remoteDependencies := CollectRemoteDependencies(project.Dependencies())
