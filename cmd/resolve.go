@@ -87,7 +87,6 @@ func CollectRemoteDependencies(dependecies *pkl.ProjectDependencies) map[string]
 func Resolve(appConfig *app.AppConfig) error {
 	resolver, err := app.NewResolver(appConfig)
 	// sugar := appConfig.Logger.Sugar()
-	// sugar := appConfig.Logger.Sugar()
 	project := appConfig.Project()
 
 	remoteDependencies := CollectRemoteDependencies(project.Dependencies())
@@ -139,7 +138,7 @@ func Resolve(appConfig *app.AppConfig) error {
 	projectFileUri, err := url.Parse(project.ProjectFileUri)
 	projectFilePath := strings.Replace(projectFileUri.Path, "/PklProject", "", 1)
 
-	versionRegex := regexp.MustCompile("^(.*)\\@(\\d+)\\.\\d.\\d")
+	versionRegex := regexp.MustCompile(`^(.*)@(\d+)`)
 
 	localDependencies := CollectLocalDependencies(project.Dependencies())
 
@@ -151,7 +150,7 @@ func Resolve(appConfig *app.AppConfig) error {
 		}
 		projectUri.Scheme = "projectpackage"
 
-		mapUri := versionRegex.ReplaceAllString(dep.Uri, "$1@$2")
+		mapUri := versionRegex.FindStringSubmatch(dep.Uri)[0]
 
 		depProjectFileUri, err := url.Parse(dep.ProjectFileUri)
 		if err != nil {
