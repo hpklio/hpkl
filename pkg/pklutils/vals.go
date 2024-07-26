@@ -2,12 +2,11 @@ package pklutils
 
 import (
 	"github.com/apple/pkl-go/pkl"
-	"go.uber.org/zap"
 	"hpkl.io/hpkl/pkg/vals"
 )
 
-func WithVals(logger *zap.Logger) func(options *pkl.EvaluatorOptions) {
-	valsReader, err := vals.NewValsReader(logger)
+func WithVals() func(options *pkl.EvaluatorOptions) {
+	valsReader, err := vals.NewValsReader()
 
 	if err != nil {
 		panic(err)

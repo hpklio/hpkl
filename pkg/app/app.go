@@ -2,14 +2,14 @@ package app
 
 import (
 	"context"
+	"io"
 	"path"
 
 	"github.com/apple/pkl-go/pkl"
-	"go.uber.org/zap"
 )
 
 type AppConfig struct {
-	Logger          *zap.Logger
+	Logger          *Logger
 	project         *pkl.Project
 	ctx             context.Context
 	PlainHttp       bool
@@ -42,13 +42,9 @@ func (a *AppConfig) Reset() {
 	a.project = nil
 }
 
-func NewAppConfig(ctx context.Context) (*AppConfig, error) {
+func NewAppConfig(ctx context.Context, outWriter io.Writer, errWriter io.Writer) (*AppConfig, error) {
 
-	logger, err := NewLogger()
-
-	if err != nil {
-		return nil, err
-	}
+	logger := NewLogger(outWriter, errWriter)
 
 	return &AppConfig{
 		Logger: logger,

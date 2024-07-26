@@ -36,8 +36,11 @@ func Execute() {
 }
 
 func init() {
-	// TODO: context?
-	appConfig, err := app.NewAppConfig(context.Background())
+	appConfig, err := app.NewAppConfig(
+		context.Background(),
+		rootCmd.OutOrStdout(),
+		rootCmd.OutOrStderr(),
+	)
 
 	if err != nil {
 		log.Fatal("Error starting app: ", err)

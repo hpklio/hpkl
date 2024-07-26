@@ -11,7 +11,6 @@ import (
 	"path"
 	"strings"
 
-	"go.uber.org/zap"
 	"hpkl.io/hpkl/pkg/pklutils"
 	"hpkl.io/hpkl/pkg/registry"
 )
@@ -47,7 +46,7 @@ type (
 		httpResolver *HttpResolver
 		basePath     string
 		cache        map[string]*Metadata
-		appConfig    *AppConfig
+		config       *AppConfig
 	}
 
 	DependencyResolver interface {
@@ -58,12 +57,12 @@ type (
 	OciResolver struct {
 		client      *registry.Client
 		plainClient *registry.Client
-		logger      *zap.Logger
+		config      *AppConfig
 	}
 
 	HttpResolver struct {
+		config    *AppConfig
 		plainHttp bool
-		logger    *zap.Logger
 	}
 
 	ResolvedDependency struct {
@@ -100,15 +99,14 @@ func NewResolver(appConfig *AppConfig) (*Resolver, error) {
 		ociResolver:  oci,
 		httpResolver: http,
 		basePath:     path.Join(appConfig.CacheDir, "package-2"),
-		appConfig:    appConfig,
+		config:       appConfig,
 		cache:        make(map[string]*Metadata),
 	}, nil
 }
 
 func (r *Resolver) Resolve(dependencies map[string]Dependency) (map[string]*Metadata, error) {
+	logger := r.config.Logger
 	result := make(map[string]*Metadata)
-
-	logger := r.appConfig.Logger.Sugar()
 
 	for _, dependency := range dependencies {
 		metadata, ok := r.cache[dependency.Uri]
@@ -117,10 +115,10 @@ func (r *Resolver) Resolve(dependencies map[string]Dependency) (map[string]*Meta
 			var resolver DependencyResolver
 
 			if strings.HasSuffix(dependencyName, ".oci") {
-				logger.Infow("Resolving", "name", dependencyName, "as", dependency, "proto", "oci")
+				logger.Info("Resolving: %s as %+v proto: oci", dependencyName, dependency)
 				resolver = r.ociResolver
 			} else {
-				logger.Infow("Resolving", "name", dependencyName, "as", dependency, "proto", "http")
+				logger.Info("Resolving: %s as %+v proto: http", dependencyName, dependency)
 				resolver = r.httpResolver
 			}
 
@@ -134,7 +132,7 @@ func (r *Resolver) Resolve(dependencies map[string]Dependency) (map[string]*Meta
 			}
 
 			if err != nil {
-				logger.Errorw("Metadata resolving error", "name", dependencyName, "value", dependency)
+				logger.Error("Metadata resolving error: %s - %+v", dependencyName, dependency)
 				return nil, err
 			}
 
@@ -182,7 +180,9 @@ func (r *Resolver) Exists(metadata *Metadata) (bool, error) {
 }
 
 func (r *Resolver) Download(dependencies map[string]*Metadata) error {
-	logger := r.appConfig.Logger.Sugar()
+
+	logger := r.config.Logger
+
 	for u, m := range dependencies {
 		e, err := r.Exists(m)
 
@@ -194,10 +194,10 @@ func (r *Resolver) Download(dependencies map[string]*Metadata) error {
 			var resolver DependencyResolver
 
 			if m.ResolverType == OCI {
-				logger.Infow("Downloading", "name", u, "as", m, "proto", "oci")
+				logger.Info("Downloading %s as %+v proto: oci", u, m)
 				resolver = r.ociResolver
 			} else {
-				logger.Infow("Resolving", "name", u, "as", m, "proto", "http")
+				logger.Info("Downloading %s as %+v proto: http", u, m)
 				resolver = r.httpResolver
 			}
 
@@ -254,7 +254,7 @@ func NewOciResolver(appConfig *AppConfig) (*OciResolver, error) {
 		return nil, err
 	}
 
-	return &OciResolver{client: client, plainClient: plainClient, logger: appConfig.Logger}, nil
+	return &OciResolver{client: client, plainClient: plainClient, config: appConfig}, nil
 }
 
 func (r *OciResolver) ResolveMetadata(uri string, plainHttp bool) (*Metadata, error) {
@@ -307,15 +307,16 @@ func (r *OciResolver) ResolveArchive(metadata *Metadata) ([]byte, error) {
 }
 
 func NewHttpResolver(appConfig *AppConfig) *HttpResolver {
-	return &HttpResolver{plainHttp: appConfig.PlainHttp, logger: appConfig.Logger}
+	return &HttpResolver{plainHttp: appConfig.PlainHttp, config: appConfig}
 }
 
 func (r *HttpResolver) ResolveMetadata(uri string, plainHttp bool) (*Metadata, error) {
-	logger := r.logger.Sugar()
+
 	u, err := url.Parse(uri)
+	logger := r.config.Logger
 
 	if err != nil {
-		logger.Errorw("Parsing error", "uri", uri)
+		logger.Error("Parsing error %s", uri)
 		return nil, err
 	}
 
@@ -328,13 +329,12 @@ func (r *HttpResolver) ResolveMetadata(uri string, plainHttp bool) (*Metadata, e
 	resp, err := http.Get(u.String())
 
 	if err != nil {
-		logger.Errorw("Http get error", "uri", u.String())
+		logger.Error("Http get error %s", u.String())
 		return nil, err
 	}
 
 	if resp.StatusCode > 300 {
-		logger.Errorw("Http error", "resp", resp.Status)
-		return nil, fmt.Errorf("Http get Error")
+		return nil, fmt.Errorf("Http get Error status: %s", resp.Status)
 	}
 
 	defer resp.Body.Close()
@@ -342,7 +342,7 @@ func (r *HttpResolver) ResolveMetadata(uri string, plainHttp bool) (*Metadata, e
 
 	var metadata *Metadata
 	if err := json.Unmarshal(body, &metadata); err != nil {
-		logger.Errorw("Json unmarshal error", "data", body)
+		logger.Error("Json unmarshal error: %s", body)
 		return nil, err
 	}
 
