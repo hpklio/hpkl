@@ -11,12 +11,12 @@ import (
 
 func NewPublishCmd(appConfig *app.AppConfig) *cobra.Command {
 
+	logger := appConfig.Logger
+
 	cmd := &cobra.Command{
 		Use:   "publish",
 		Short: "publish package to oci registry",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
-			sugar := appConfig.Logger.Sugar()
 
 			name := appConfig.Project().Package.Name
 			version := appConfig.Project().Package.Version
@@ -36,15 +36,13 @@ func NewPublishCmd(appConfig *app.AppConfig) *cobra.Command {
 				return err
 			}
 
-			sugar.Infof("generated", "ref", ref)
-
 			pushResult, err := client.Push(archivePath, metadataPath, ref, appConfig.Project())
 
 			if err != nil {
 				return err
 			}
 
-			sugar.Infow("got", "pushResult", pushResult)
+			logger.Info("Publish result: %+v", pushResult)
 
 			return nil
 		},

@@ -1,34 +1,30 @@
 package app
 
 import (
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+	"fmt"
+	"io"
 )
 
-func NewLogger() (*zap.Logger, error) {
-	return newConfig().Build()
+type Logger struct {
+	out io.Writer
+	err io.Writer
 }
 
-func newConfig() zap.Config {
-	return zap.Config{
-		Level:       zap.NewAtomicLevelAt(zap.InfoLevel),
-		Development: false,
-		Encoding:    "console",
-		EncoderConfig: zapcore.EncoderConfig{
-			TimeKey:        "ts",
-			LevelKey:       "level",
-			NameKey:        "logger",
-			CallerKey:      zapcore.OmitKey,
-			FunctionKey:    zapcore.OmitKey,
-			MessageKey:     "msg",
-			StacktraceKey:  "stacktrace",
-			LineEnding:     zapcore.DefaultLineEnding,
-			EncodeLevel:    zapcore.LowercaseLevelEncoder,
-			EncodeTime:     zapcore.ISO8601TimeEncoder,
-			EncodeDuration: zapcore.StringDurationEncoder,
-			EncodeCaller:   zapcore.ShortCallerEncoder,
-		},
-		OutputPaths:      []string{"stderr"},
-		ErrorOutputPaths: []string{"stderr"},
+func NewLogger(outWriter io.Writer, errWriter io.Writer) *Logger {
+	return &Logger{
+		out: outWriter,
+		err: errWriter,
 	}
+}
+
+func (l *Logger) Log(def io.Writer, s string, a ...any) {
+	fmt.Fprintln(def, fmt.Sprintf(s, a...))
+}
+
+func (l *Logger) Info(s string, a ...any) {
+	l.Log(l.out, s, a...)
+}
+
+func (l *Logger) Error(s string, a ...any) {
+	l.Log(l.err, s, a...)
 }

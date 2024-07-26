@@ -17,13 +17,15 @@ import (
 
 func NewResolveCmd(appConfig *app.AppConfig) *cobra.Command {
 
+	logger := appConfig.Logger
+
 	cmd := &cobra.Command{
 		Use:   "resolve",
 		Short: "Resolve all dependencies from pkl project",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				for _, v := range args {
-					appConfig.Logger.Sugar().Infow("Resolving", "path", v)
+					logger.Info("Resolving path: %s", v)
 					appConfig.WorkingDir = v
 					appConfig.Reset()
 					err := Resolve(appConfig)
