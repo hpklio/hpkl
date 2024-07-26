@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"io"
+	"os"
 	"path"
 
 	"github.com/apple/pkl-go/pkl"
@@ -25,16 +26,20 @@ const (
 )
 
 func (a *AppConfig) Project() *pkl.Project {
+
 	projectFile := path.Join(a.WorkingDir, "PklProject")
 
 	if a.project == nil {
-		proj, err := pkl.LoadProject(a.ctx, projectFile)
+		if _, err := os.Stat(projectFile); err == nil {
+			proj, err := pkl.LoadProject(a.ctx, projectFile)
 
-		if err != nil {
-			panic(err)
+			if err != nil {
+				panic(err)
+			}
+			a.project = proj
 		}
-		a.project = proj
 	}
+
 	return a.project
 }
 

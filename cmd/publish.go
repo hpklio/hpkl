@@ -18,9 +18,10 @@ func NewPublishCmd(appConfig *app.AppConfig) *cobra.Command {
 		Short: "publish package to oci registry",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			name := appConfig.Project().Package.Name
-			version := appConfig.Project().Package.Version
-			baseUri := appConfig.Project().Package.BaseUri
+			project := appConfig.Project()
+			name := project.Package.Name
+			version := project.Package.Version
+			baseUri := project.Package.BaseUri
 
 			client, err := registry.NewClient(registry.WithPlainHttp(appConfig.PlainHttp))
 			if err != nil {

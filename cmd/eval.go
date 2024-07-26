@@ -19,9 +19,19 @@ func NewEvalCmd(appConfig *app.AppConfig) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			for i, module := range args {
+
+				project := appConfig.Project()
+				var projectFunc func(opts *pkl.EvaluatorOptions)
+
+				if project != nil {
+					projectFunc = pkl.WithProject(project)
+				} else {
+					projectFunc = func(opts *pkl.EvaluatorOptions) {}
+				}
+
 				evaluator, err := pkl.NewEvaluator(
 					cmd.Context(),
-					pkl.WithProject(appConfig.Project()),
+					projectFunc,
 					pkl.PreconfiguredOptions,
 					pklutils.WithVals(),
 					func(opts *pkl.EvaluatorOptions) {
