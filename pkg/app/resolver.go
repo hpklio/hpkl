@@ -11,6 +11,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"hpkl.io/hpkl/pkg/pklutils"
 	"hpkl.io/hpkl/pkg/registry"
 )
@@ -104,6 +105,56 @@ func NewResolver(appConfig *AppConfig) (*Resolver, error) {
 	}, nil
 }
 
+func (r *Resolver) MajorVersionPackage(metadata *Metadata) (string, error) {
+
+	baseUri, err := url.Parse(metadata.PackageUri)
+
+	if err != nil {
+		return "", err
+	}
+
+	mapUri := *baseUri
+	mapUri.Scheme = "projectpackage"
+	mapUri.Path = strings.Replace(mapUri.Path, fmt.Sprintf("@%s", metadata.Version), "", 1)
+
+	versionParsed := semver.MustParse(metadata.Version)
+	majorVersion := fmt.Sprintf("@%x", versionParsed.Major())
+	mapUri.Path += majorVersion
+
+	return mapUri.String(), nil
+
+}
+
+func (r *Resolver) Deduplicate(dependecies map[string]*Metadata) (map[string]*Metadata, error) {
+	versioned := make(map[string]*Metadata)
+
+	for _, dep := range dependecies {
+		depVersion, err := r.MajorVersionPackage(dep)
+		if err == nil {
+			exists, ok := versioned[depVersion]
+			if !ok {
+				versioned[depVersion] = dep
+			} else {
+				verDep := semver.MustParse(dep.Version)
+				verExists := semver.MustParse(exists.Version)
+
+				if verDep.GreaterThan(verExists) {
+					versioned[depVersion] = dep
+				}
+			}
+		} else {
+			return nil, err
+		}
+	}
+
+	result := make(map[string]*Metadata)
+	for _, dep := range versioned {
+		result[dep.PackageUri] = dep
+	}
+
+	return result, nil
+}
+
 func (r *Resolver) Resolve(dependencies map[string]Dependency) (map[string]*Metadata, error) {
 	logger := r.config.Logger
 	result := make(map[string]*Metadata)
@@ -129,11 +180,6 @@ func (r *Resolver) Resolve(dependencies map[string]Dependency) (map[string]*Meta
 			if err != nil {
 				logger.Error("Metadata resolving error: %s - %+v", dependencyName, dependency)
 				return nil, err
-			}
-
-			for metadataName, metadataDep := range metadata.Dependencies {
-				metadataDep.Name = metadataName
-				metadata.Dependencies[metadataName] = metadataDep
 			}
 
 			for metadataName, metadataDep := range metadata.Dependencies {

@@ -1,14 +1,12 @@
 package cmd
 
 import (
-	"fmt"
 	"maps"
 	"net/url"
 	"path/filepath"
 	"regexp"
 	"strings"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/apple/pkl-go/pkl"
 	"github.com/spf13/cobra"
 	"hpkl.io/hpkl/pkg/app"
@@ -48,11 +46,11 @@ func NewResolveCmd(appConfig *app.AppConfig) *cobra.Command {
 	return cmd
 }
 
-func CollectLocalDependencies(dependecies *pkl.ProjectDependencies) map[string]app.Dependency {
-	result := make(map[string]app.Dependency)
+func CollectLocalDependencies(dependecies *pkl.ProjectDependencies) map[string]*app.Dependency {
+	result := make(map[string]*app.Dependency)
 
 	for n, dep := range dependecies.LocalDependencies {
-		result[dep.PackageUri] = app.Dependency{Uri: dep.PackageUri, Name: n, ProjectFileUri: dep.ProjectFileUri}
+		result[dep.PackageUri] = &app.Dependency{Uri: dep.PackageUri, Name: n, ProjectFileUri: dep.ProjectFileUri}
 
 		for _, localDep := range dep.Dependencies.LocalDependencies {
 			inner := CollectLocalDependencies(localDep.Dependencies)
@@ -99,6 +97,12 @@ func Resolve(appConfig *app.AppConfig) error {
 		return err
 	}
 
+	resolvedDependencies, err = resolver.Deduplicate(resolvedDependencies)
+
+	if err != nil {
+		return err
+	}
+
 	err = resolver.Download(resolvedDependencies)
 
 	if err != nil {
@@ -112,29 +116,21 @@ func Resolve(appConfig *app.AppConfig) error {
 		ResolvedDependencies: dependencies,
 	}
 
-	for depUri, dep := range resolvedDependencies {
+	for _, dep := range resolvedDependencies {
 
-		baseUri, err := url.Parse(depUri)
+		mapUri, err := resolver.MajorVersionPackage(dep)
 
 		if err != nil {
 			return err
 		}
 
-		mapUri := *baseUri
-		mapUri.Path = strings.Replace(mapUri.Path, fmt.Sprintf("@%s", dep.Version), "", 1)
-
-		baseUri.Scheme = "projectpackage"
-		versionParsed := semver.MustParse(dep.Version)
-		majorVersion := fmt.Sprintf("@%x", versionParsed.Major())
-		mapUri.Path += majorVersion
-
 		resolvedDependency := pklutils.ResolvedDependency{
 			DependencyType: "remote",
-			Uri:            baseUri.String(),
+			Uri:            dep.PackageUri,
 			Checksums:      map[string]string{"sha256": dep.PackageZipChecksums.Sha256},
 		}
 
-		projectDeps.ResolvedDependencies[mapUri.String()] = &resolvedDependency
+		projectDeps.ResolvedDependencies[mapUri] = &resolvedDependency
 	}
 
 	projectFileUri, err := url.Parse(project.ProjectFileUri)
