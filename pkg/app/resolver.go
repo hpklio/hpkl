@@ -114,7 +114,7 @@ func (r *Resolver) MajorVersionPackage(metadata *Metadata) (string, error) {
 	}
 
 	mapUri := *baseUri
-	mapUri.Scheme = "projectpackage"
+	mapUri.Scheme = "package"
 	mapUri.Path = strings.Replace(mapUri.Path, fmt.Sprintf("@%s", metadata.Version), "", 1)
 
 	versionParsed := semver.MustParse(metadata.Version)

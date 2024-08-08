@@ -124,9 +124,17 @@ func Resolve(appConfig *app.AppConfig) error {
 			return err
 		}
 
+		packageUri, err := url.Parse(dep.PackageUri)
+
+		if err != nil {
+			return err
+		}
+
+		packageUri.Scheme = "projectpackage"
+
 		resolvedDependency := pklutils.ResolvedDependency{
 			DependencyType: "remote",
-			Uri:            dep.PackageUri,
+			Uri:            packageUri.String(),
 			Checksums:      map[string]string{"sha256": dep.PackageZipChecksums.Sha256},
 		}
 
