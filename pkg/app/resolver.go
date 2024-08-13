@@ -187,11 +187,6 @@ func (r *Resolver) Resolve(dependencies map[string]Dependency) (map[string]*Meta
 				return nil, err
 			}
 
-			for metadataName, metadataDep := range metadata.Dependencies {
-				metadataDep.Name = metadataName
-				metadata.Dependencies[metadataName] = metadataDep
-			}
-
 			r.cache[dependency.Uri] = metadata
 			result[dependency.Uri] = metadata
 
