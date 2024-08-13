@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"os/exec"
 
 	"github.com/spf13/cobra"
@@ -12,8 +13,6 @@ func NewPackageCmd(appConfig *app.AppConfig) *cobra.Command {
 		Use:   "package",
 		Short: "Package hpkl project",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
-			sugar := appConfig.Logger.Sugar()
 
 			pklCmd := exec.Command(
 				"pkl",
@@ -29,7 +28,7 @@ func NewPackageCmd(appConfig *app.AppConfig) *cobra.Command {
 
 			if err != nil {
 				if ee, ok := err.(*exec.ExitError); ok {
-					sugar.Error(string(ee.Stderr))
+					return errors.New(string(ee.Stderr))
 				}
 				return err
 			}

@@ -19,15 +19,13 @@ import (
 var rootCmd = &cobra.Command{
 	Use:     "hpkl",
 	Version: app.Version(),
-	Short:   "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// SilenceUsage:  true,
-	// SilenceErrors: true,
+	Short:   "The tool extends PKL-lang with OCI and VALS capabilities, providing end-to-end configuration type safety.",
+	Long: `The tool extends the PKL-lang with OCI and VALS capabilities, enhancing it to provide end-to-end configuration type safety. 
+	This integration ensures robust, consistent, and error-free configurations by leveraging the OCI 
+	(Open Container Initiative) standards for container specifications and the vals for secrets management. 
+	The tool simplifies the development process, reduces configuration errors, and boosts overall system reliability 
+	by enforcing strict type safety across all configurations.`,
+	SilenceUsage: true,
 }
 
 func Execute() {
@@ -38,8 +36,11 @@ func Execute() {
 }
 
 func init() {
-	// TODO: context?
-	appConfig, err := app.NewAppConfig(context.Background())
+	appConfig, err := app.NewAppConfig(
+		context.Background(),
+		rootCmd.OutOrStdout(),
+		rootCmd.OutOrStderr(),
+	)
 
 	if err != nil {
 		log.Fatal("Error starting app: ", err)
