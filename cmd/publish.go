@@ -28,8 +28,8 @@ func NewPublishCmd(appConfig *app.AppConfig) *cobra.Command {
 				return err
 			}
 
-			archivePath := fmt.Sprintf(".out/%s@%s/%s@%s.zip", name, version, name, version)
-			metadataPath := fmt.Sprintf(".out/%s@%s/%s@%s", name, version, name, version)
+			archivePath := fmt.Sprintf("%s/.out/%s@%s/%s@%s.zip", appConfig.WorkingDir, name, version, name, version)
+			metadataPath := fmt.Sprintf("%s/.out/%s@%s/%s@%s", appConfig.WorkingDir, name, version, name, version)
 
 			ref, err := pklutils.PklBaseUriToRef(baseUri, version)
 
