@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"path"
 
 	"github.com/spf13/cobra"
 	"hpkl.io/hpkl/pkg/app"
@@ -28,8 +29,10 @@ func NewPublishCmd(appConfig *app.AppConfig) *cobra.Command {
 				return err
 			}
 
-			archivePath := fmt.Sprintf(".out/%s@%s/%s@%s.zip", name, version, name, version)
-			metadataPath := fmt.Sprintf(".out/%s@%s/%s@%s", name, version, name, version)
+			appNameWithVersion := fmt.Sprintf("%s@%s", name, version)                    // app@version
+			baseDir := path.Join(appConfig.WorkingDir, ".out", appNameWithVersion)       // working_dir/.out/app@version
+			archivePath := path.Join(baseDir, fmt.Sprintf("%s.zip", appNameWithVersion)) // working_dir/.out/app@version/app@version.zip
+			metadataPath := path.Join(baseDir, appNameWithVersion)                       // working_dir/.out/app@version/app@version
 
 			ref, err := pklutils.PklBaseUriToRef(baseUri, version)
 
