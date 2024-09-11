@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"io"
+	"os"
 )
 
 type Logger struct {
@@ -27,4 +28,9 @@ func (l *Logger) Info(s string, a ...any) {
 
 func (l *Logger) Error(s string, a ...any) {
 	l.Log(l.err, s, a...)
+}
+
+func (l *Logger) Fatal(s string, a ...any) {
+	l.Log(l.err, s, a...)
+	os.Exit(1)
 }

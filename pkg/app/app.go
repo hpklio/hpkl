@@ -31,12 +31,15 @@ func (a *AppConfig) Project() *pkl.Project {
 
 	if a.project == nil {
 		if _, err := os.Stat(projectFile); err == nil {
+
 			proj, err := pkl.LoadProject(a.ctx, projectFile)
 
 			if err != nil {
-				panic(err)
+				a.Logger.Fatal("PklProject file not found in the working directory %s", a.WorkingDir)
 			}
 			a.project = proj
+		} else {
+			a.Logger.Fatal("PklProject file not found in the working directory %s", a.WorkingDir)
 		}
 	}
 
