@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -25,7 +27,7 @@ const (
 	configPath = ".hpkl/config.pkl"
 )
 
-func (a *AppConfig) Project() *pkl.Project {
+func (a *AppConfig) ProjectOrErr() (*pkl.Project, error) {
 
 	projectFile := path.Join(a.WorkingDir, "PklProject")
 
@@ -35,15 +37,24 @@ func (a *AppConfig) Project() *pkl.Project {
 			proj, err := pkl.LoadProject(a.ctx, projectFile)
 
 			if err != nil {
-				a.Logger.Fatal("PklProject file not found in the working directory %s", a.WorkingDir)
+				return nil, err
 			}
 			a.project = proj
 		} else {
-			a.Logger.Fatal("PklProject file not found in the working directory %s", a.WorkingDir)
+			return nil, errors.New(fmt.Sprintf("PklProject file not found in the working directory %s", a.WorkingDir))
 		}
 	}
 
-	return a.project
+	return a.project, nil
+}
+
+func (a *AppConfig) Project() *pkl.Project {
+
+	p, err := a.ProjectOrErr()
+	if err != nil {
+		a.Logger.Fatal(err.Error())
+	}
+	return p
 }
 
 func (a *AppConfig) Reset() {

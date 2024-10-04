@@ -20,10 +20,10 @@ func NewEvalCmd(appConfig *app.AppConfig) *cobra.Command {
 
 			for i, module := range args {
 
-				project := appConfig.Project()
+				project, err := appConfig.ProjectOrErr()
 				var projectFunc func(opts *pkl.EvaluatorOptions)
 
-				if project != nil {
+				if project != nil && err == nil {
 					projectFunc = pkl.WithProject(project)
 				} else {
 					projectFunc = func(opts *pkl.EvaluatorOptions) {}
