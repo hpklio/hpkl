@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"os"
+	"path"
+
 	"github.com/apple/pkl-go/pkl"
 	"github.com/spf13/cobra"
 	"hpkl.io/hpkl/pkg/app"
@@ -11,6 +14,7 @@ func NewEvalCmd(appConfig *app.AppConfig) *cobra.Command {
 	var expression string
 	var moduleOutputSeparator string
 	var format string
+	var multipleFileOutputPath string
 
 	cmd := &cobra.Command{
 		Use:   "eval",
@@ -51,23 +55,50 @@ func NewEvalCmd(appConfig *app.AppConfig) *cobra.Command {
 
 				var text string
 
-				if expression == "" {
-					text, err = evaluator.EvaluateOutputText(cmd.Context(), pkl.FileSource(module))
-				} else {
-					bytes, err := evaluator.EvaluateExpressionRaw(cmd.Context(), pkl.FileSource(module), expression)
-					if err == nil {
-						text = string(bytes[3:])
+				if multipleFileOutputPath != "" {
+					err = os.MkdirAll(multipleFileOutputPath, os.ModePerm)
+
+					if err != nil {
+						return err
 					}
-				}
 
-				if err != nil {
-					return err
-				}
+					files, err := evaluator.EvaluateOutputFiles(cmd.Context(), pkl.FileSource(module))
 
-				cmd.OutOrStdout().Write(([]byte)(text))
+					if err != nil {
+						return err
+					}
 
-				if len(args) > i+1 {
-					cmd.OutOrStdout().Write([]byte(moduleOutputSeparator))
+					for name, value := range files {
+						filePath := path.Join(multipleFileOutputPath, name)
+						err = os.WriteFile(filePath, []byte(value), 0644)
+
+						if err != nil {
+							return err
+						}
+
+						cmd.OutOrStdout().Write(([]byte)(filePath + "\n"))
+					}
+
+				} else {
+					if expression == "" {
+						text, err = evaluator.EvaluateOutputText(cmd.Context(), pkl.FileSource(module))
+					} else {
+						bytes, err := evaluator.EvaluateExpressionRaw(cmd.Context(), pkl.FileSource(module), expression)
+						if err == nil {
+							text = string(bytes[3:])
+						}
+					}
+
+					if err != nil {
+						return err
+					}
+
+					cmd.OutOrStdout().Write(([]byte)(text))
+
+					if len(args) > i+1 {
+						cmd.OutOrStdout().Write([]byte(moduleOutputSeparator))
+					}
+
 				}
 			}
 
@@ -78,6 +109,7 @@ func NewEvalCmd(appConfig *app.AppConfig) *cobra.Command {
 	cmd.Flags().StringVar(&moduleOutputSeparator, "module-output-separator", "---", "Separator to use when multiple module outputs are written to the same file.")
 	cmd.Flags().StringVarP(&expression, "expression", "x", "", "Expression to be evaluated within the module.")
 	cmd.Flags().StringVarP(&format, "format", "f", "", "Output format to generate. <json, jsonnet,pcf, properties, plist, textproto, xml, yaml>")
+	cmd.Flags().StringVarP(&multipleFileOutputPath, "multiple-file-output-path", "m", "", "Directory where a module's multiple file output is placed.")
 
 	return cmd
 }
