@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"sync"
-
-	"github.com/helmfile/vals"
 )
 
 const (
@@ -13,18 +11,18 @@ const (
 	valsCacheSize = 512
 )
 
-var instance *vals.Runtime
+var instance *KeysRuntime
 var once sync.Once
 
-func ValsInstance() (*vals.Runtime, error) {
+func ValsInstance() (*KeysRuntime, error) {
 	var err error
 
 	var valsOutputBuffer bytes.Buffer
 	valsOutput := bufio.NewWriter(&valsOutputBuffer)
 
 	once.Do(func() {
-		instance, err = vals.New(
-			vals.Options{CacheSize: valsCacheSize, LogOutput: valsOutput, FailOnMissingKeyInMap: true},
+		instance, err = New(
+			Options{CacheSize: valsCacheSize, LogOutput: valsOutput, FailOnMissingKeyInMap: true},
 		)
 	})
 

@@ -1,4 +1,4 @@
-package app
+package logger
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ type Logger struct {
 	err io.Writer
 }
 
-func NewLogger(outWriter io.Writer, errWriter io.Writer) *Logger {
+func New(outWriter io.Writer, errWriter io.Writer) *Logger {
 	return &Logger{
 		out: outWriter,
 		err: errWriter,
