@@ -37,7 +37,7 @@ func NewEvalCmd(appConfig *app.AppConfig) *cobra.Command {
 					cmd.Context(),
 					projectFunc,
 					pkl.PreconfiguredOptions,
-					pklutils.WithVals(),
+					pklutils.WithVals(appConfig.Logger),
 					func(opts *pkl.EvaluatorOptions) {
 						opts.CacheDir = appConfig.CacheDir
 						if appConfig.RootDir != "" {

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"hpkl.io/hpkl/pkg/logger"
 )
 
 func TestDeduplicate(t *testing.T) {
@@ -13,7 +14,7 @@ func TestDeduplicate(t *testing.T) {
 	errWriter := new(bytes.Buffer)
 
 	r, err := NewResolver(&AppConfig{
-		Logger:    NewLogger(stdWriter, errWriter),
+		Logger:    logger.New(stdWriter, errWriter),
 		project:   nil,
 		ctx:       context.Background(),
 		PlainHttp: true,
