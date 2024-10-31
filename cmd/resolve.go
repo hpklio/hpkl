@@ -3,9 +3,9 @@ package cmd
 import (
 	"maps"
 	"net/url"
+	"path"
 	"path/filepath"
 	"regexp"
-	"strings"
 
 	"github.com/apple/pkl-go/pkl"
 	"github.com/spf13/cobra"
@@ -86,7 +86,11 @@ func CollectRemoteDependencies(dependecies *pkl.ProjectDependencies) map[string]
 
 func Resolve(appConfig *app.AppConfig) error {
 	resolver, err := app.NewResolver(appConfig)
-	// sugar := appConfig.Logger.Sugar()
+	if err != nil {
+		appConfig.Logger.Error("Error on creating resolver")
+		return err
+	}
+
 	project := appConfig.Project()
 
 	remoteDependencies := CollectRemoteDependencies(project.Dependencies())
@@ -94,12 +98,14 @@ func Resolve(appConfig *app.AppConfig) error {
 	resolvedDependencies, err := resolver.Resolve(remoteDependencies)
 
 	if err != nil {
+		appConfig.Logger.Error("Error on resolving remote dependencies")
 		return err
 	}
 
 	resolvedDependencies, err = resolver.Deduplicate(resolvedDependencies)
 
 	if err != nil {
+		appConfig.Logger.Error("Error on deduplication")
 		return err
 	}
 
@@ -121,6 +127,7 @@ func Resolve(appConfig *app.AppConfig) error {
 		mapUri, err := resolver.MajorVersionPackage(dep)
 
 		if err != nil {
+			appConfig.Logger.Error("Error on dependency resolving")
 			return err
 		}
 
@@ -142,7 +149,12 @@ func Resolve(appConfig *app.AppConfig) error {
 	}
 
 	projectFileUri, err := url.Parse(project.ProjectFileUri)
-	projectFilePath := strings.Replace(projectFileUri.Path, "/PklProject", "", 1)
+	if err != nil {
+		appConfig.Logger.Error("Error on Url Parsing")
+		return err
+	}
+
+	projectFilePath := path.Dir(projectFileUri.Path)
 
 	versionRegex := regexp.MustCompile(`^(.*)@(\d+)`)
 
@@ -152,6 +164,7 @@ func Resolve(appConfig *app.AppConfig) error {
 
 		projectUri, err := url.Parse(dep.Uri)
 		if err != nil {
+			appConfig.Logger.Error("Error on Url Parsing in dependency")
 			return err
 		}
 		projectUri.Scheme = "projectpackage"
@@ -163,9 +176,10 @@ func Resolve(appConfig *app.AppConfig) error {
 			return err
 		}
 
-		rel, err := filepath.Rel(projectFilePath, strings.Replace(depProjectFileUri.Path, "/PklProject", "", 1))
+		rel, err := filepath.Rel(projectFilePath, path.Dir(depProjectFileUri.Path))
 
 		if err != nil {
+			appConfig.Logger.Error("Error on Url Parsing in dependency")
 			return err
 		}
 
@@ -179,6 +193,7 @@ func Resolve(appConfig *app.AppConfig) error {
 
 	err = pklutils.PklWriteDeps(appConfig.WorkingDir, &projectDeps)
 	if err != nil {
+		appConfig.Logger.Error("Error on write deps")
 		return err
 	}
 

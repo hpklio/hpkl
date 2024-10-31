@@ -6,7 +6,7 @@ package cmd
 import (
 	"context"
 	"os"
-	"path"
+	"path/filepath"
 
 	"log"
 
@@ -65,9 +65,9 @@ func init() {
 		panic(err)
 	}
 
-	appConfig.DefaultCacheDir = path.Join(homeDir, ".pkl/cache")
+	appConfig.DefaultCacheDir = filepath.Join(homeDir, ".pkl/cache")
 
-	rootCmd.PersistentFlags().StringVar(&appConfig.CacheDir, "cache-dir", path.Join(homeDir, ".pkl/cache"), "The cache directory for storing packages")
+	rootCmd.PersistentFlags().StringVar(&appConfig.CacheDir, "cache-dir", filepath.Join(homeDir, ".pkl/cache"), "The cache directory for storing packages")
 	rootCmd.PersistentFlags().StringVarP(&appConfig.WorkingDir, "working-dir", "w", workingDir, "Base path that relative module paths are resolved against.")
 	rootCmd.PersistentFlags().StringVar(&appConfig.RootDir, "root-dir", "", "Restricts access to file-based modules and resources to those located under the root directory.")
 }

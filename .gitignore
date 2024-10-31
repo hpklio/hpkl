@@ -27,3 +27,4 @@ hpkl
 hpkl.gz
 
 dist/
+.DS_Store

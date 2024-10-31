@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -74,7 +74,7 @@ func NewClient(options ...ClientOption) (*Client, error) {
 		if err != nil {
 			return nil, err
 		}
-		client.credentialsFile = path.Join(home, ".docker/config.json")
+		client.credentialsFile = filepath.Join(home, ".docker", "config.json")
 	}
 	if client.authorizer == nil {
 		authClient, err := dockerauth.NewClientWithDockerFallback(client.credentialsFile)

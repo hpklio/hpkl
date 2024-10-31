@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/apple/pkl-go/pkl"
+	"hpkl.io/hpkl/pkg/hpkl"
 )
 
 type AppConfig struct {
@@ -29,14 +30,15 @@ const (
 
 func (a *AppConfig) ProjectOrErr() (*pkl.Project, error) {
 
-	projectFile := path.Join(a.WorkingDir, "PklProject")
+	projectFile := filepath.Join(a.WorkingDir, "PklProject")
 
 	if a.project == nil {
 		if _, err := os.Stat(projectFile); err == nil {
 
-			proj, err := pkl.LoadProject(a.ctx, projectFile)
+			proj, err := hpkl.LoadProject(a.ctx, projectFile)
 
 			if err != nil {
+				a.Logger.Error("Project file path: %s", projectFile)
 				return nil, err
 			}
 			a.project = proj

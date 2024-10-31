@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -27,7 +27,7 @@ func PklWriteDeps(workingDir string, deps *ProjectDeps) error {
 		return err
 	}
 
-	err = os.WriteFile(path.Join(workingDir, "PklProject.deps.json"), depsData, os.ModePerm)
+	err = os.WriteFile(filepath.Join(workingDir, "PklProject.deps.json"), depsData, os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -36,7 +36,7 @@ func PklWriteDeps(workingDir string, deps *ProjectDeps) error {
 }
 
 func PklGetRelativePath(cacheDir string, baseUri *url.URL) string {
-	return path.Join(
+	return filepath.Join(
 		cacheDir,
 		baseUri.Host,
 		baseUri.Path,

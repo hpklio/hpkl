@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/url"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -21,8 +21,8 @@ func NewDownloadPackageCmd(appConfig *app.AppConfig) *cobra.Command {
 		Short: "Download package",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if appConfig.CacheDir != appConfig.DefaultCacheDir {
-				basePath := path.Join(appConfig.DefaultCacheDir, "package-2")
-				baseTargetPath := path.Join(appConfig.CacheDir, "package-2")
+				basePath := filepath.Join(appConfig.DefaultCacheDir, "package-2")
+				baseTargetPath := filepath.Join(appConfig.CacheDir, "package-2")
 
 				for _, v := range args {
 
@@ -35,7 +35,7 @@ func NewDownloadPackageCmd(appConfig *app.AppConfig) *cobra.Command {
 
 					relativePath := pklutils.PklGetRelativePath(basePath, u)
 					targetPath := pklutils.PklGetRelativePath(baseTargetPath, u)
-					parentDir := path.Join(targetPath, "..")
+					parentDir := filepath.Join(targetPath, "..")
 
 					if _, err := os.Stat(parentDir); errors.Is(err, os.ErrNotExist) {
 						os.MkdirAll(parentDir, os.ModePerm)
