@@ -3,7 +3,6 @@ package cmd
 import (
 	"maps"
 	"net/url"
-	"path"
 	"path/filepath"
 	"regexp"
 
@@ -154,7 +153,7 @@ func Resolve(appConfig *app.AppConfig) error {
 		return err
 	}
 
-	projectFilePath := path.Dir(projectFileUri.Path)
+	projectFilePath := filepath.Dir(projectFileUri.Path)
 
 	versionRegex := regexp.MustCompile(`^(.*)@(\d+)`)
 
@@ -176,7 +175,7 @@ func Resolve(appConfig *app.AppConfig) error {
 			return err
 		}
 
-		rel, err := filepath.Rel(projectFilePath, path.Dir(depProjectFileUri.Path))
+		rel, err := filepath.Rel(projectFilePath, filepath.Dir(depProjectFileUri.Path))
 
 		if err != nil {
 			appConfig.Logger.Error("Error on Url Parsing in dependency")
