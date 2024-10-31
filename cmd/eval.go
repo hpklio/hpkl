@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/apple/pkl-go/pkl"
 	"github.com/spf13/cobra"
@@ -62,14 +62,14 @@ func NewEvalCmd(appConfig *app.AppConfig) *cobra.Command {
 						return err
 					}
 
-					files, err := evaluator.EvaluateOutputFiles(cmd.Context(), pkl.FileSource(module))
+					files, err := evaluator.EvaluateOutputFiles(cmd.Context(), pklutils.FileSource(module))
 
 					if err != nil {
 						return err
 					}
 
 					for name, value := range files {
-						filePath := path.Join(multipleFileOutputPath, name)
+						filePath := filepath.Join(multipleFileOutputPath, name)
 						err = os.WriteFile(filePath, []byte(value), 0644)
 
 						if err != nil {
@@ -81,9 +81,9 @@ func NewEvalCmd(appConfig *app.AppConfig) *cobra.Command {
 
 				} else {
 					if expression == "" {
-						text, err = evaluator.EvaluateOutputText(cmd.Context(), pkl.FileSource(module))
+						text, err = evaluator.EvaluateOutputText(cmd.Context(), pklutils.FileSource(module))
 					} else {
-						bytes, err := evaluator.EvaluateExpressionRaw(cmd.Context(), pkl.FileSource(module), expression)
+						bytes, err := evaluator.EvaluateExpressionRaw(cmd.Context(), pklutils.FileSource(module), expression)
 						if err == nil {
 							text = string(bytes[3:])
 						}

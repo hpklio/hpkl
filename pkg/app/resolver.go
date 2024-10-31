@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -99,7 +99,7 @@ func NewResolver(appConfig *AppConfig) (*Resolver, error) {
 	return &Resolver{
 		ociResolver:  oci,
 		httpResolver: http,
-		basePath:     path.Join(appConfig.CacheDir, "package-2"),
+		basePath:     filepath.Join(appConfig.CacheDir, "package-2"),
 		config:       appConfig,
 		cache:        make(map[string]*Metadata),
 	}, nil
@@ -266,8 +266,8 @@ func (r *Resolver) Download(dependencies map[string]*Metadata) error {
 				return err
 			}
 
-			metaPath := path.Join(basePath, fmt.Sprintf("%s@%s.json", m.Name, m.Version))
-			archivePath := path.Join(basePath, fmt.Sprintf("%s@%s.zip", m.Name, m.Version))
+			metaPath := filepath.Join(basePath, fmt.Sprintf("%s@%s.json", m.Name, m.Version))
+			archivePath := filepath.Join(basePath, fmt.Sprintf("%s@%s.zip", m.Name, m.Version))
 
 			metadataBytes, err := json.Marshal(m)
 
@@ -293,7 +293,11 @@ func (r *Resolver) Download(dependencies map[string]*Metadata) error {
 }
 
 func NewOciResolver(appConfig *AppConfig) (*OciResolver, error) {
-	client, err := registry.NewClient(registry.WithPlainHttp(appConfig.PlainHttp))
+	var client, err = registry.NewClient(registry.WithPlainHttp(appConfig.PlainHttp))
+	if err != nil {
+		return nil, err
+	}
+
 	plainClient, err := registry.NewClient(registry.WithPlainHttp(true))
 
 	if err != nil {
@@ -385,6 +389,9 @@ func (r *HttpResolver) ResolveMetadata(uri string, plainHttp bool) (*Metadata, e
 
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 
 	var metadata *Metadata
 	if err := json.Unmarshal(body, &metadata); err != nil {
@@ -399,6 +406,7 @@ func (r *HttpResolver) ResolveMetadata(uri string, plainHttp bool) (*Metadata, e
 }
 
 func (r *HttpResolver) ResolveArchive(metadata *Metadata) ([]byte, error) {
+	var err error
 	resp, err := http.Get(metadata.PackageZipUrl)
 
 	if err != nil {
@@ -407,6 +415,10 @@ func (r *HttpResolver) ResolveArchive(metadata *Metadata) ([]byte, error) {
 
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
+
+	if err != nil {
+		return nil, err
+	}
 
 	return body, nil
 }
