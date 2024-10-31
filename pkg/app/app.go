@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 
 	"github.com/apple/pkl-go/pkl"
-	"hpkl.io/hpkl/pkg/hpkl"
 	"hpkl.io/hpkl/pkg/logger"
+	"hpkl.io/hpkl/pkg/pklutils"
 )
 
 type AppConfig struct {
@@ -36,7 +36,7 @@ func (a *AppConfig) ProjectOrErr() (*pkl.Project, error) {
 	if a.project == nil {
 		if _, err := os.Stat(projectFile); err == nil {
 
-			proj, err := hpkl.LoadProject(a.ctx, projectFile)
+			proj, err := pklutils.LoadProject(a.ctx, projectFile)
 
 			if err != nil {
 				a.Logger.Error("Project file path: %s", projectFile)

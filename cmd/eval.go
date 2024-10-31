@@ -7,7 +7,6 @@ import (
 	"github.com/apple/pkl-go/pkl"
 	"github.com/spf13/cobra"
 	"hpkl.io/hpkl/pkg/app"
-	"hpkl.io/hpkl/pkg/hpkl"
 	"hpkl.io/hpkl/pkg/pklutils"
 )
 
@@ -63,7 +62,7 @@ func NewEvalCmd(appConfig *app.AppConfig) *cobra.Command {
 						return err
 					}
 
-					files, err := evaluator.EvaluateOutputFiles(cmd.Context(), hpkl.FileSource(module))
+					files, err := evaluator.EvaluateOutputFiles(cmd.Context(), pklutils.FileSource(module))
 
 					if err != nil {
 						return err
@@ -82,9 +81,9 @@ func NewEvalCmd(appConfig *app.AppConfig) *cobra.Command {
 
 				} else {
 					if expression == "" {
-						text, err = evaluator.EvaluateOutputText(cmd.Context(), hpkl.FileSource(module))
+						text, err = evaluator.EvaluateOutputText(cmd.Context(), pklutils.FileSource(module))
 					} else {
-						bytes, err := evaluator.EvaluateExpressionRaw(cmd.Context(), hpkl.FileSource(module), expression)
+						bytes, err := evaluator.EvaluateExpressionRaw(cmd.Context(), pklutils.FileSource(module), expression)
 						if err == nil {
 							text = string(bytes[3:])
 						}
