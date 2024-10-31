@@ -2,11 +2,12 @@ package pklutils
 
 import (
 	"github.com/apple/pkl-go/pkl"
+	"hpkl.io/hpkl/pkg/logger"
 	"hpkl.io/hpkl/pkg/vals"
 )
 
-func WithVals() func(options *pkl.EvaluatorOptions) {
-	valsReader, err := vals.NewValsReader()
+func WithVals(logger *logger.Logger) func(options *pkl.EvaluatorOptions) {
+	valsReader, err := vals.NewValsReader(logger)
 
 	if err != nil {
 		panic(err)

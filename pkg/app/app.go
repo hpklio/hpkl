@@ -10,10 +10,11 @@ import (
 
 	"github.com/apple/pkl-go/pkl"
 	"hpkl.io/hpkl/pkg/hpkl"
+	"hpkl.io/hpkl/pkg/logger"
 )
 
 type AppConfig struct {
-	Logger          *Logger
+	Logger          *logger.Logger
 	project         *pkl.Project
 	ctx             context.Context
 	PlainHttp       bool
@@ -65,7 +66,7 @@ func (a *AppConfig) Reset() {
 
 func NewAppConfig(ctx context.Context, outWriter io.Writer, errWriter io.Writer) (*AppConfig, error) {
 
-	logger := NewLogger(outWriter, errWriter)
+	logger := logger.New(outWriter, errWriter)
 
 	return &AppConfig{
 		Logger: logger,
